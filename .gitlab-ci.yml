@@ -1,0 +1,30 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: always
+    - when: never
+
+variables:
+  GITLAB_LOGIN:
+    description: "gitlab.com login"
+    value: <gitlab_login>
+  GITLAB_PASSWORD:
+    description: "gitlab.com password" 
+
+stages:
+  - build
+  - deploy
+
+build-job:
+  stage: build
+  image: docker:latest
+  script:
+    - docker build -t registry.gitlab.com/$GITLAB_LOGIN/stage-2 .
+    - docker login --username $GITLAB_LOGIN --password $GITLAB_PASSWORD registry.gitlab.com
+    - docker push registry.gitlab.com/$GITLAB_LOGIN/stage-2
+
+deploy-job:
+  stage: deploy
+  image: dtzar/helm-kubectl:latest
+  script:
+    - helm install stage-2 .
